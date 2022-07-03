@@ -80,9 +80,10 @@ def _wrap_content_stream(content):
 def build_raw_headers(headers):
     """Convert a dict of headers to a tuple of tuples. Mimics the format of ClientResponse.
     """
-    raw_headers = []
-    for k, v in headers.items():
-        raw_headers.append((k.encode('utf8'), v.encode('utf8')))
+    raw_headers = [
+        (k.encode('utf8'), v.encode('utf8')) for k, v in headers.items()
+    ]
+
     return tuple(raw_headers)
 
 
@@ -183,7 +184,7 @@ class _AioHttPretty:
     def register_json_uri(self, method, uri, **options):
         body = json.dumps(options.pop('body', None)).encode('utf-8')
         headers = {'Content-Type': 'application/json'}
-        headers.update(options.pop('headers', {}))
+        headers |= options.pop('headers', {})
         self.register_uri(method, uri, body=body, headers=headers, **options)
 
     def activate(self):
@@ -197,10 +198,7 @@ class _AioHttPretty:
         self.registry = {}
 
     def compare_call(self, first, second):
-        for key, value in first.items():
-            if second.get(key) != value:
-                return False
-        return True
+        return all(second.get(key) == value for key, value in first.items())
 
     def has_call(self, uri, check_params=True, **kwargs):
         """Check to see if the given uri was called.  By default will verify that the query params
